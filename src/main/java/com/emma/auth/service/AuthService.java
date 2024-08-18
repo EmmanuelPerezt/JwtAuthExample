@@ -13,6 +13,7 @@ import org.springframework.stereotype.Service;
 import com.emma.auth.model.Usermodel;
 import com.emma.auth.repository.Userrepository;
 
+import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
 import io.jsonwebtoken.security.Keys;
@@ -38,13 +39,20 @@ public class AuthService {
     }
 
 
-    public String login(String username, String password) throws Exception{
+    public String login(String username, String password, String token) throws Exception{
         Usermodel user= userrepository.findByUsername(username);
         
 
         if(passwordEncoder.matches(password, user.getPassword())){
-            
-            return generateToken(user);
+            if(token != null){
+                try{
+                    validatetToken(token);
+                    return token;
+                }catch(Exception e){
+                    return "token no valido";
+                }
+            }
+        return generateToken(user);
         }else{
             throw new Exception("Invalid username or password");
         }
@@ -61,6 +69,15 @@ public class AuthService {
                 .setExpiration(new Date(System.currentTimeMillis() + 1000 * 60 * 60 * 10)) // Token válido por 10 horas
                 .signWith(SignatureAlgorithm.HS256, SECRET_KEY)
                 .compact();
+    }
+    public Claims validatetToken(String token){
+
+
+        return Jwts.parser()
+        .setSigningKey(SECRET_KEY)
+        .build()
+        .parseClaimsJws(token)
+        .getBody();
     }
 
 }
